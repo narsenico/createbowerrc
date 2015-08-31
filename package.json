@@ -3,6 +3,7 @@
     "version": "0.0.1",
     "description": "create .bowerrc file filled with npm proxy settings",
     "main": "index.js",
+    "bin": { "createbowerrc": "bin/create.js" },
     "scripts": {
         "test": "node tests/test.js"
     },
