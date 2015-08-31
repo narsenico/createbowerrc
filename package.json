@@ -1,0 +1,18 @@
+{
+    "name": "createbowerrc",
+    "version": "0.0.1",
+    "description": "create .bowerrc file filled with npm proxy settings",
+    "main": "index.js",
+    "scripts": {
+        "test": "node tests/test.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/narsenico/createbowerrc.git"
+    },
+    "author": "narsenico",
+    "license": "MIT",
+    "dependencies": {
+        "process": "^0.11.1"
+    }
+}
