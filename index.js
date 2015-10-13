@@ -1,5 +1,5 @@
 /* createbowerrc
- * ver. 0.0.1
+ * ver. 0.0.2
  * by narsenico
  *
  * args: 
@@ -18,27 +18,32 @@ var ARG_STRICTSSL = /^\-(s|\-ssl)$/;
 var ARG_PROXY = /^\-(p|\-proxy)$/;
 var ARG_NPMRC = /^\-(n|\-npmrc)$/;
 var ARG_HELP = /^\-(h|\-help)$/;
+var VER = '0.0.2';
 
 function getUserHome() {
     return process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
 }
 
 function parseArgv(argv) {
-    var args = {};
-    for (var ii = 2; ii < argv.length; ii++) {
-        if (ARG_DIRECTORY.test(argv[ii])) {
-            args["directory"] = argv[++ii];
-        } else if (ARG_STRICTSSL.test(argv[ii])) {
-            args["strict-ssl"] = (argv[++ii] === 'true');
-        } else if (ARG_PROXY.test(argv[ii])) {
-            args["proxy"] = argv[++ii];
-        } else if (ARG_NPMRC.test(argv[ii])) {
-            args["npmrc"] = true;
-        } else if (ARG_HELP.test(argv[ii])) {
-            return 'help';
+    if (argv.length > 2) {
+        var args = {};
+        for (var ii = 2; ii < argv.length; ii++) {
+            if (ARG_DIRECTORY.test(argv[ii])) {
+                args["directory"] = argv[++ii];
+            } else if (ARG_STRICTSSL.test(argv[ii])) {
+                args["strict-ssl"] = (argv[++ii] === 'true');
+            } else if (ARG_PROXY.test(argv[ii])) {
+                args["proxy"] = argv[++ii];
+            } else if (ARG_NPMRC.test(argv[ii])) {
+                args["npmrc"] = true;
+            } else if (ARG_HELP.test(argv[ii])) {
+                return 'help';
+            }
         }
+        return args;
+    } else {
+        return 'help';
     }
-    return args;
 }
 
 function writeOut(oout, cb) {
@@ -61,8 +66,9 @@ function writeOut(oout, cb) {
 
 function printHelp() {
     console.log(
+        "Ver. " + VER + "\n" +
         "Usage:\n" +
-        "    createbowerrc [<options>]\n\n" +
+        "    createbowerrc <options>\n\n" +
         "Options:\n" +
         "    -h, --help                This help.\n" +
         "    -d, --directory <path>    The path in which installed components should be\n" +
