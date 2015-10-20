@@ -1,6 +1,6 @@
 {
   "name": "createbowerrc",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "create .bowerrc file filled with some settings",
   "main": "index.js",
   "bin": {
