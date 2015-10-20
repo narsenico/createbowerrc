@@ -10,7 +10,9 @@
  */
 var fs = require('fs');
 var process = require('process');
-var promptly = require('promptly-sync');
+var promptly = require('promptly');
+var promptlySync = require('promptly-sync');
+var stringifyObject = require('stringify-object');
 
 //regex per le chiavi inerenti al proxy 
 var NPMRC_KEYS = /^(https\-proxy|proxy)=(.*)/;
@@ -79,14 +81,14 @@ function askForArgs() {
         name: FIELD_STRICTSSL,
         type: 'confirm',
         default: 'n',
-        description: 'Use strict-ssl for requests via https? [y|N]'
+        description: 'Use strict-ssl for requests via https? (y|N)'
     }, {
         name: FIELD_USENPMRC,
         type: 'confirm',
         default: 'y',
-        description: 'Import proxy settings from .npmrc file? [Y|n]'
+        description: 'Import proxy settings from .npmrc file? (Y|n)'
     }];
-    promptly(questions, function(err, result) {
+    promptlySync(questions, function(err, result) {
         if (!err) {
             create(result);
         }
@@ -99,16 +101,34 @@ function parseArgv(args) {
         if (ARG_DIRECTORY.test(args[ii])) {
             obj[FIELD_DIRECTORY] = args[++ii];
         } else if (ARG_STRICTSSL.test(args[ii])) {
-            obj[FIELD_STRICTSSL] = (args[++ii] === 'true');
+            obj[FIELD_STRICTSSL] = (/true|y|yes/i.test(args[++ii]));
         } else if (ARG_PROXY.test(args[ii])) {
             obj[FIELD_PROXY] = obj[FIELD_HTTPSPROXY] = args[++ii];
         } else if (ARG_NPMRC.test(args[ii])) {
             obj[FIELD_USENPMRC] = true;
         } else if (ARG_HELP.test(args[ii])) {
-            //TODO help
+            printHelp();
+            return;
         }
     }
     create(obj);
+}
+
+function printHelp() {
+    console.log(
+        "Ver. " + VER + "\n" +
+        "Usage:\n" +
+        "    createbowerrc <options>\n\n" +
+        "Options:\n" +
+        "    -h, --help                This help.\n" +
+        "    -d, --directory <path>    The path in which installed components should be\n" +
+        "                              saved. If not specified this defaults to\n" +
+        "                              bower_components.\n" +
+        "    -p, --proxy <url>         The proxy to use for http requests.\n" +
+        "    -s, --ssl <true|false>    Whether or not to do SSL key validation when\n" +
+        "                              making requests via https.\n" +
+        "    -n, --npmrc               Load config from .npmrc file.\n"
+    );
 }
 
 function exec() {
@@ -135,63 +155,48 @@ function create(options) {
                         options[tokens[1]] = tokens[2];
                     }
                 }
-                writeOut(options, end);
+                writeOut(options, writeEnd);
             }
         });
     } else {
-        writeOut(options, end);
-    }
-}
-
-//elimina i campi vuoti
-function cleanObj(obj) {
-    delete obj[FIELD_USENPMRC];
-    for (var aa in obj) {
-        if (!obj[aa]) {
-            delete obj[aa]
-        };
+        writeOut(options, writeEnd);
     }
 }
 
 function writeOut(obj, cb) {
-    //pulisco l'oggetto prima della scrittura
-    cleanObj(obj);
-    console.log("write", obj);
-    //se gia' presente il file verra' sostituito
-    var path = './.bowerrc';
-    fs.open(path, 'w', function writeFs(err, fd) {
-        if (err) {
-            cb(err);
-        } else {
-            fs.write(fd, JSON.stringify(obj), 0, 'utf8', function writecb(err, written, string) {
+    //i parametri vuoti vengono esclusi
+    var str = stringifyObject(obj, {
+        singleQuotes: false,
+        filter: function(obj, prop) {
+            return (prop != FIELD_USENPMRC && !(/^\s*$/.test(obj[prop])));
+        }
+    });
+    //chiedo conferma all'utente
+    console.log('\n', str, '\n');
+    promptly.confirm('Looks good? (Y|n)', {
+        default: 'y'
+    }, function(err, value) {
+        if (value) {
+            //se gia' presente il file verra' sostituito
+            var path = './.bowerrc';
+            fs.open(path, 'w', function writeFs(err, fd) {
                 if (err) {
                     cb(err);
                 } else {
-                    cb(null);
+                    fs.write(fd, str, 0, 'utf8', function writecb(err, written, string) {
+                        if (err) {
+                            cb(err);
+                        } else {
+                            cb(null);
+                        }
+                    });
                 }
             });
         }
     });
 }
 
-// function printHelp() {
-//     console.log(
-//         "Ver. " + VER + "\n" +
-//         "Usage:\n" +
-//         "    createbowerrc <options>\n\n" +
-//         "Options:\n" +
-//         "    -h, --help                This help.\n" +
-//         "    -d, --directory <path>    The path in which installed components should be\n" +
-//         "                              saved. If not specified this defaults to\n" +
-//         "                              bower_components.\n" +
-//         "    -p, --proxy <url>         The proxy to use for http requests.\n" +
-//         "    -s, --ssl <true|false>    Whether or not to do SSL key validation when\n" +
-//         "                              making requests via https.\n" +
-//         "    -n, --npmrc               Load config from .npmrc file.\n"
-//     );
-// }
-
-function end(err) {
+function writeEnd(err) {
     if (err) {
         throw err;
     } else {
