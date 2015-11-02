@@ -19,7 +19,6 @@
   "dependencies": {
     "process": "^0.11.1",
     "promptly": "^0.2.1",
-    "promptly-sync": "0.0.3",
-    "stringify-object": "^2.3.0"
+    "promptly-sync": "0.0.3"
   }
 }

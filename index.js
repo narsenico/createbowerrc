@@ -1,5 +1,5 @@
 /* createbowerrc
- * ver. 0.0.2
+ * ver. 0.1.0
  * by narsenico
  *
  * args: 
@@ -12,10 +12,9 @@ var fs = require('fs');
 var process = require('process');
 var promptly = require('promptly');
 var promptlySync = require('promptly-sync');
-var stringifyObject = require('stringify-object');
 
 //regex per le chiavi inerenti al proxy 
-var NPMRC_KEYS = /^(https\-proxy|proxy)=(.*)/;
+var NPMRC_KEYS = /^(https\-proxy|proxy|strict-ssl)=(.*)/;
 //regex per gli argomenti da linea di comando
 var ARG_DIRECTORY = /^\-(d|\-directory)$/;
 var ARG_STRICTSSL = /^\-(s|\-ssl)$/;
@@ -85,11 +84,13 @@ function askForArgs() {
     }, {
         name: FIELD_USENPMRC,
         type: 'confirm',
-        default: 'y',
-        description: 'Import proxy settings from .npmrc file? (Y|n)'
+        default: 'n',
+        description: 'Import proxy settings from .npmrc file? (y|N)'
     }];
     promptlySync(questions, function(err, result) {
-        if (!err) {
+        if (err) {
+            throw err;
+        } else {
             create(result);
         }
     });
@@ -151,6 +152,7 @@ function create(options) {
                 var rows = data.split(/[\r\n]/);
                 for (var ii = 0; ii < rows.length; ii++) {
                     var tokens = NPMRC_KEYS.exec(rows[ii]);
+                    // console.log('---', rows[ii]);
                     if (tokens && tokens.length == 3) {
                         options[tokens[1]] = tokens[2];
                     }
@@ -165,12 +167,10 @@ function create(options) {
 
 function writeOut(obj, cb) {
     //i parametri vuoti vengono esclusi
-    var str = stringifyObject(obj, {
-        singleQuotes: false,
-        filter: function(obj, prop) {
-            return (prop != FIELD_USENPMRC && !(/^\s*$/.test(obj[prop])));
-        }
-    });
+    var str = JSON.stringify(obj, function(key, value) {
+        if (key != FIELD_USENPMRC && !(/^\s*$/.test(value))) return value;
+        else return undefined;
+    }, '\t');
     //chiedo conferma all'utente
     console.log('\n', str, '\n');
     promptly.confirm('Looks good? (Y|n)', {
