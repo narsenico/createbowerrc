@@ -13,9 +13,10 @@ var process = require('process');
 var promptly = require('promptly');
 var promptlySync = require('promptly-sync');
 var chalk = require('chalk');
+var highlight = require('cardinal').highlight;
 
 //regex per le chiavi inerenti al proxy 
-var NPMRC_KEYS = /^(https\-proxy|proxy|strict-ssl)=(.*)/;
+var NPMRC_KEYS = /^(https\-proxy|proxy|strict-ssl)=(true|false|(.*))/;
 //regex per gli argomenti da linea di comando
 var ARG_DIRECTORY = /^\-(d|\-directory)$/;
 var ARG_STRICTSSL = /^\-(s|\-ssl)$/;
@@ -106,6 +107,7 @@ function askForArgs() {
 }
 
 function parseArgv(args) {
+    //TODO provare nopt
     var obj = {}; //TODO merge?
     for (var ii = 0; ii < args.length; ii++) {
         if (ARG_DIRECTORY.test(args[ii])) {
@@ -161,9 +163,10 @@ function create(options) {
                 var rows = data.split(/[\r\n]/);
                 for (var ii = 0; ii < rows.length; ii++) {
                     var tokens = NPMRC_KEYS.exec(rows[ii]);
-                    // console.log('---', rows[ii]);
-                    if (tokens && tokens.length == 3) {
-                        options[tokens[1]] = tokens[2];
+                    //console.log('---', tokens[0]);
+                    //1: field, 2: true|false, 3: string
+                    if (tokens && tokens.length >= 3) {
+                        options[tokens[1]] = (tokens[3] || (tokens[2] == 'true'));
                     }
                 }
                 writeOut(options, writeEnd);
@@ -181,7 +184,7 @@ function writeOut(obj, cb) {
         else return undefined;
     }, 4);
     //chiedo conferma all'utente
-    console.log('\n', chalk.green(str), '\n');
+    console.log('\n', highlight(str, {json:true}), '\n');
     promptly.confirm('Looks good? (Y|n)', {
         default: 'y'
     }, function(err, value) {
