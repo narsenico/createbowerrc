@@ -1,1 +1,3 @@
-require('./../index.js').exec();
+require('./../index.js')
+	.exec();
+	// .help();

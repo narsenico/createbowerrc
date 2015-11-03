@@ -12,6 +12,7 @@ var fs = require('fs');
 var process = require('process');
 var promptly = require('promptly');
 var promptlySync = require('promptly-sync');
+var chalk = require('chalk');
 
 //regex per le chiavi inerenti al proxy 
 var NPMRC_KEYS = /^(https\-proxy|proxy|strict-ssl)=(.*)/;
@@ -27,7 +28,7 @@ var FIELD_DIRECTORY = 'directory';
 var FIELD_PROXY = 'proxy';
 var FIELD_HTTPSPROXY = 'https-proxy';
 var FIELD_USENPMRC = 'usenpmrc';
-// var VER = '0.0.2';
+var VER = '0.1.0';
 
 // TODO considerare tutti i parametri -> https://github.com/bower/spec/blob/master/config.md
 
@@ -57,34 +58,42 @@ function merge(obj1, obj2) {
     return merg;
 }
 
+function initDefaults() {
+    defaults[FIELD_DIRECTORY] = '';
+    defaults[FIELD_PROXY] = '';
+    defaults[FIELD_HTTPSPROXY] = '';
+    defaults[FIELD_STRICTSSL] = false;
+    defaults[FIELD_USENPMRC] = false;
+}
+
 function askForArgs() {
     var questions = [{
         name: FIELD_DIRECTORY,
         type: 'prompt',
-        default: '',
+        default: defaults[FIELD_DIRECTORY],
         retry: false,
         description: 'Bower components path (eg: bower_components):'
     }, {
         name: FIELD_PROXY,
         type: 'prompt',
-        default: '',
+        default: defaults[FIELD_PROXY],
         retry: false,
         description: 'The proxy to use for http requests:'
     }, {
         name: FIELD_HTTPSPROXY,
         type: 'prompt',
-        default: '',
+        default: defaults[FIELD_HTTPSPROXY],
         retry: false,
         description: 'The proxy to use for https requests:'
     }, {
         name: FIELD_STRICTSSL,
         type: 'confirm',
-        default: 'n',
+        default: defaults[FIELD_STRICTSSL] ? 'y' : 'n',
         description: 'Use strict-ssl for requests via https? (y|N)'
     }, {
         name: FIELD_USENPMRC,
         type: 'confirm',
-        default: 'n',
+        default: defaults[FIELD_USENPMRC] ? 'y' : 'n',
         description: 'Import proxy settings from .npmrc file? (y|N)'
     }];
     promptlySync(questions, function(err, result) {
@@ -117,22 +126,23 @@ function parseArgv(args) {
 
 function printHelp() {
     console.log(
-        "Ver. " + VER + "\n" +
-        "Usage:\n" +
-        "    createbowerrc <options>\n\n" +
-        "Options:\n" +
-        "    -h, --help                This help.\n" +
-        "    -d, --directory <path>    The path in which installed components should be\n" +
+        // "Ver. " + VER + "\n" +
+        "Usage:\n\n" +
+        "    " + chalk.cyan("createbowerrc") + " <options>\n\n" +
+        "Options:\n\n" +
+        "    " + chalk.yellow("-h, --help") + "                This help.\n" +
+        "    " + chalk.yellow("-d, --directory") + " <path>    The path in which installed components should be\n" +
         "                              saved. If not specified this defaults to\n" +
         "                              bower_components.\n" +
-        "    -p, --proxy <url>         The proxy to use for http requests.\n" +
-        "    -s, --ssl <true|false>    Whether or not to do SSL key validation when\n" +
+        "    " + chalk.yellow("-p, --proxy") + " <url>         The proxy to use for http requests.\n" +
+        "    " + chalk.yellow("-s, --ssl") + " <true|false>    Whether or not to do SSL key validation when\n" +
         "                              making requests via https.\n" +
-        "    -n, --npmrc               Load config from .npmrc file.\n"
+        "    " + chalk.yellow("-n, --npmrc") + "               Load config from .npmrc file.\n"
     );
 }
 
 function exec() {
+    initDefaults();
     if (process.argv && process.argv.length > 2) {
         parseArgv(process.argv.slice(2));
     } else {
@@ -141,7 +151,6 @@ function exec() {
 }
 
 function create(options) {
-    options = merge(defaults, options);
     if (options[FIELD_USENPMRC] === true) {
         //recupero le informazioni sul proxy da .npmrc
         var npmrcPath = getUserHome() + '/.npmrc';
@@ -170,9 +179,9 @@ function writeOut(obj, cb) {
     var str = JSON.stringify(obj, function(key, value) {
         if (key != FIELD_USENPMRC && !(/^\s*$/.test(value))) return value;
         else return undefined;
-    }, '\t');
+    }, 4);
     //chiedo conferma all'utente
-    console.log('\n', str, '\n');
+    console.log('\n', chalk.green(str), '\n');
     promptly.confirm('Looks good? (Y|n)', {
         default: 'y'
     }, function(err, value) {
@@ -200,9 +209,10 @@ function writeEnd(err) {
     if (err) {
         throw err;
     } else {
-        console.log('.bowerrc created in current folder');
+        console.log('\n', chalk.cyan('.bowerrc created in current folder'));
     }
 }
 
 exports.exec = exec;
+exports.help = printHelp;
 exports.create = create;
