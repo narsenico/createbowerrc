@@ -156,20 +156,25 @@ function create(options) {
     if (options[FIELD_USENPMRC] === true) {
         //recupero le informazioni sul proxy da .npmrc
         var npmrcPath = getUserHome() + '/.npmrc';
-        fs.readFile(npmrcPath, 'utf8', function readcb(err, data) {
-            if (err) {
-                console.log('There was an error reading "' + npmrcPath + '" file.', '\n', err);
+        fs.exists(npmrcPath, function(exists) {
+            if (!exists) {
+                console.log(chalk.red('.npmrc file not found'));
             } else {
-                var rows = data.split(/[\r\n]/);
-                for (var ii = 0; ii < rows.length; ii++) {
-                    var tokens = NPMRC_KEYS.exec(rows[ii]);
-                    //console.log('---', tokens[0]);
-                    //1: field, 2: true|false, 3: string
-                    if (tokens && tokens.length >= 3) {
-                        options[tokens[1]] = (tokens[3] || (tokens[2] == 'true'));
+                fs.readFile(npmrcPath, 'utf8', function readcb(err, data) {
+                    if (err) {
+                        console.log('There was an error reading "' + npmrcPath + '" file.', '\n', err);
+                    } else {
+                        var rows = data.split(/[\r\n]/);
+                        for (var ii = 0; ii < rows.length; ii++) {
+                            var tokens = NPMRC_KEYS.exec(rows[ii]);
+                            //1: field, 2: true|false, 3: string
+                            if (tokens && tokens.length >= 3) {
+                                options[tokens[1]] = (tokens[3] || (tokens[2] == 'true'));
+                            }
+                        }
+                        writeOut(options, writeEnd);
                     }
-                }
-                writeOut(options, writeEnd);
+                });
             }
         });
     } else {
@@ -184,7 +189,9 @@ function writeOut(obj, cb) {
         else return undefined;
     }, 4);
     //chiedo conferma all'utente
-    console.log('\n', highlight(str, {json:true}), '\n');
+    console.log('\n', highlight(str, {
+        json: true
+    }), '\n');
     promptly.confirm('Looks good? (Y|n)', {
         default: 'y'
     }, function(err, value) {
